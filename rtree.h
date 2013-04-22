@@ -200,8 +200,6 @@ namespace cmpt740 {
 
     private:
         RtreeNode* root;
-
-//	std::fstream hd;
 	Mempool* mempool;
     };
 }

@@ -23,12 +23,13 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <cstdlib>
 
 #include "../rtree.h"
 
-#define NUM_TOTAL_OPS 40000
+#define NUM_TOTAL_OPS     40000
 
-#define NUM_THREADS       4
+#define NUM_THREADS       16
 #define NUM_THREAD_OPS    (NUM_TOTAL_OPS / NUM_THREADS)
 
 struct rtree_args {
@@ -42,8 +43,7 @@ void* insert_routine(void* arg)
     uint32_t min[DIMENSION], max[DIMENSION];
     for (int i = p->index*NUM_THREAD_OPS; i < (p->index+1)*NUM_THREAD_OPS; i++) {
 	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-    	    // max[j] = min[j] + 1;
+	    // max[j] = min[j] = rand() % NUM_TOTAL_OPS;
 	    max[j] = min[j] = i + i;
 	}
 	p->rtree->Insert(min, max, NULL);
@@ -57,11 +57,10 @@ void* search_routine(void* arg)
     uint32_t min[DIMENSION], max[DIMENSION];
     for (int i = p->index*NUM_THREAD_OPS; i < (p->index+1)*NUM_THREAD_OPS; i++) {
 	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-    	    // max[j] = min[j] + 1;
-	    max[j] = min[j] = i + 1;
+	    // max[j] = min[j] = rand() % NUM_TOTAL_OPS;
+	    max[j] = min[j] = i + i;
 	}
-    	p->rtree->Search(min, max);
+	p->rtree->Search(min, max);
     }
     pthread_exit(NULL);
 }
@@ -72,11 +71,10 @@ void* delete_routine(void* arg)
     uint32_t min[DIMENSION], max[DIMENSION];
     for (int i = p->index*NUM_THREAD_OPS; i < (p->index+1)*NUM_THREAD_OPS; i++) {
 	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-    	    // max[j] = min[j] + 1;
-	    max[j] = min[j] = i + 1;
+	    // max[j] = min[j] = rand() % NUM_TOTAL_OPS;
+	    max[j] = min[j] = i + i;
 	}
-    	p->rtree->Delete(min, max, NULL);
+   	p->rtree->Delete(min, max, NULL);
     }
     pthread_exit(NULL);
 }
@@ -94,64 +92,61 @@ int main(int argc, char *argv[])
     uint32_t min[DIMENSION], max[DIMENSION];
     start = clock();
     for (int i = 0; i < NUM_TOTAL_OPS; i++) {
-	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-	    // max[j] = min[j] + 1;
-	    max[j] = min[j] = i + 1;
-	}
-	rtree->Insert(min, max, NULL);
+    	for (int j = 0; j < DIMENSION; ++j) {
+	    // max[j] = min[j] = rand() % NUM_TOTAL_OPS;
+    	    max[j] = min[j] = i + 1;
+    	}
+    	rtree->Insert(min, max, NULL);
     }
     end = clock();
     std::cout << "Time elapsed: "
-	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
+    	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
     std::cout << "insert count: " << NUM_TOTAL_OPS << ", ";
     std::cout << "average throughput: "
-	      << (long)((float)NUM_TOTAL_OPS /
-			(((float)(end - start))/CLOCKS_PER_SEC))
-	      << " ops per sec" << std::endl << std::endl;
+    	      << (long)((float)NUM_TOTAL_OPS /
+    			(((float)(end - start))/CLOCKS_PER_SEC))
+    	      << " ops per sec" << std::endl << std::endl;
 
 
     std::cout << "----------Search Result----------" << std::endl;
     start = clock();
     for (int i = 0; i < NUM_TOTAL_OPS; i++) {
-	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-	    // max[j] = min[j] + 1;
-	    max[j] = min[j] = i + 1;
-	}
-	rtree->Search(min, max);
+    	for (int j = 0; j < DIMENSION; ++j) {
+    	    max[j] = min[j] = rand() % NUM_TOTAL_OPS;
+    	    // max[j] = min[j] = i + 1;
+    	}
+    	rtree->Search(min, max);
     }
     end = clock();
     std::cout << "Time elapsed: "
-	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
-    std::cout << "search count: " << NUM_TOTAL_OPS << ", ";
+    	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
+    std::cout << "delete count: " << NUM_TOTAL_OPS << ", ";
     std::cout << "average throughput: "
-	      << (long)((float)NUM_TOTAL_OPS /
-			(((float)(end - start))/CLOCKS_PER_SEC))
-	      << " ops per sec" << std::endl << std::endl;
+    	      << (long)((float)NUM_TOTAL_OPS /
+    			(((float)(end - start))/CLOCKS_PER_SEC))
+    	      << " ops per sec" << std::endl << std::endl;
 
     std::cout << "----------Delete Result----------" << std::endl;
     start = clock();
     for (int i = 0; i < NUM_TOTAL_OPS; i++) {
-	for (int j = 0; j < DIMENSION; ++j) {
-	    // min[j] = rand() % NUM_TOTAL_OPS;
-	    // max[j] = min[j] + 1;
-	    max[j] = min[j] = i + 1;
-	}
-	rtree->Delete(min, max, NULL);
+    	for (int j = 0; j < DIMENSION; ++j) {
+    	    max[j] = min[j] = rand() % NUM_TOTAL_OPS;
+    	    // max[j] = min[j] = i + 1;
+    	}
+    	rtree->Delete(min, max, NULL);
     }
     end = clock();
     std::cout << "Time elapsed: "
-	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
+    	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
     std::cout << "delete count: " << NUM_TOTAL_OPS << ", ";
     std::cout << "average throughput: "
-	      << (long)((float)NUM_TOTAL_OPS /
-			(((float)(end - start))/CLOCKS_PER_SEC))
-	      << " ops per sec" << std::endl << std::endl;
+    	      << (long)((float)NUM_TOTAL_OPS /
+    			(((float)(end - start))/CLOCKS_PER_SEC))
+    	      << " ops per sec" << std::endl << std::endl;
 
     delete rtree;
 
-    rtree = new cmpt740::Rtree;
+    cmpt740::Rtree* rtree2 = new cmpt740::Rtree;
     std::cout << "===============================================" << std::endl;
     std::cout << "                 Multiple Thread               " << std::endl;
     std::cout << "===============================================" << std::endl;
@@ -167,15 +162,15 @@ int main(int argc, char *argv[])
     std::cout << "----------Insert Result----------" << std::endl;
     start = clock();
     for (int i = 0; i < NUM_THREADS; ++i) {
-	//	printf("In main: creating thread %d\n", i);
-	struct rtree_args* p1 = new struct rtree_args;
-	p1->index = i;
-	p1->rtree = rtree;
-	rc = pthread_create(&insert_threads[i], NULL, insert_routine, (void*)p1);
-	if (rc){
-	    printf("ERROR; return code from pthread_create() is %d\n", rc);
-	    return -1;
-	}
+    	//	printf("In main: creating thread %d\n", i);
+    	struct rtree_args* p1 = new struct rtree_args;
+    	p1->index = i;
+    	p1->rtree = rtree2;
+    	rc = pthread_create(&insert_threads[i], NULL, insert_routine, (void*)p1);
+    	if (rc){
+    	    printf("ERROR; return code from pthread_create() is %d\n", rc);
+    	    return -1;
+    	}
     }
 
     for (int i = 0; i < NUM_THREADS; ++i) {
@@ -184,12 +179,12 @@ int main(int argc, char *argv[])
 
     end = clock();
     std::cout << "Time elapsed: "
-	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
+    	      << ((float)(end - start))/CLOCKS_PER_SEC << "s, ";
     std::cout << "insert count: " << NUM_TOTAL_OPS << ", ";
     std::cout << "average throughput: "
-	      << (long)((float)NUM_TOTAL_OPS /
-			(((float)(end - start))/CLOCKS_PER_SEC))
-	      << " ops per sec" << std::endl << std::endl;
+    	      << (long)((float)NUM_TOTAL_OPS /
+    			(((float)(end - start))/CLOCKS_PER_SEC))
+    	      << " ops per sec" << std::endl << std::endl;
 
     pthread_t search_threads[NUM_THREADS];
     std::cout << "----------Search Result----------" << std::endl;
@@ -198,7 +193,7 @@ int main(int argc, char *argv[])
     	//	printf("In main: creating thread %d\n", i);
     	struct rtree_args* p2 = new struct rtree_args;
     	p2->index = i;
-    	p2->rtree = rtree;
+    	p2->rtree = rtree2;
     	rc = pthread_create(&search_threads[i], NULL, search_routine, (void*)p2);
     	if (rc){
     	    printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -227,7 +222,7 @@ int main(int argc, char *argv[])
     	//	printf("In main: creating thread %d\n", i);
     	struct rtree_args* p3 = new struct rtree_args;
     	p3->index = i;
-    	p3->rtree = rtree;
+    	p3->rtree = rtree2;
     	rc = pthread_create(&delete_threads[i], NULL, delete_routine, (void*)p3);
     	if (rc){
     	    printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -236,7 +231,7 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 0; i < NUM_THREADS; ++i) {
-		pthread_join(delete_threads[i], &status);
+	pthread_join(delete_threads[i], &status);
     }
 
     end = clock();
@@ -247,5 +242,7 @@ int main(int argc, char *argv[])
 	<< (long)((float)NUM_TOTAL_OPS /
 			  (((float)(end - start))/CLOCKS_PER_SEC))
 	<< " ops per sec" << std::endl << std::endl;
+
+    delete rtree2;
     return 0;
 }

@@ -104,7 +104,8 @@ namespace cmpt740 {
 	lsn = (*root)->lsn;
 
 	RtreeNode* leaf = FindLeaf(*root, record, lsn);
-	if (leaf == NULL) return false;
+	if (leaf == NULL)
+	    return false;
 	RtreeRect rect = NodeCover(leaf);
 	RtreeNode* newNode;
 	bool ret = AddRecord(record, leaf, &newNode);
@@ -283,7 +284,7 @@ namespace cmpt740 {
 
     void Rtree::InitRect(RtreeRect* rect)
     {
-	for (int index = 0; index < MAX_REC_NUM_PER_NODE; ++index) {
+	for (int index = 0; index < DIMENSION; ++index) {
 	    rect->min[index] = 0;
 	    rect->max[index] = 0;
 	}
@@ -487,8 +488,8 @@ namespace cmpt740 {
 			biggestDiff = diff;
 			chosen = index;
 			betterGroup = group;
-		    } else if (( diff == biggestDiff ) && (parVars->count[group]
-							   < parVars->count[betterGroup])) {
+		    } else if (( diff == biggestDiff ) &&
+			       (parVars->count[group] < parVars->count[betterGroup])) {
 			chosen = index;
 			betterGroup = group;
 		    }
@@ -673,48 +674,93 @@ namespace cmpt740 {
 	return results;
     }
 
+    // // Range query version
+    // void Rtree::SearchRecordInNode(RtreeRecord* record,
+    // 				   std::stack<Rtree::RtreeNodeLSN*>& stk,
+    // 				   std::vector<Rtree::RtreeRecord>& results)
+    // {
+    // 	while (!stk.empty()) {
+    // 	    Rtree::RtreeNodeLSN* nodelsn = stk.top();
+    // 	    stk.pop();
+    // 	    Rtree::RtreeNode* node = nodelsn->node;
+    // 	    node->rdlock();
+    // 	    if (node->level == 0) { // leaf node
+    // 		for(uint32_t index=0; index < node->count; ++index) {
+    // 		    if(Overlap(&record->rect, &(node->records[index].rect))) {
+    // 			results.push_back(node->records[index]);
+    // 		    }
+    // 		}
+    // 		node->unlock();
+    // 		continue;
+    // 	    }
+    // 	    node->rdlock();
+    // 	    uint64_t lsn = nodelsn->lsn;
+    // 	    while (node != NULL && lsn != node->lsn) {
+    // 	    	RtreeNode* prev = node;
+    // 	    	node = node->sibling;
+    // 	    	assert(node != NULL);
+    // 	    	prev->unlock();
+    // 	    	node->rdlock();
+    // 	    	Rtree::RtreeNodeLSN* nl = new Rtree::RtreeNodeLSN;
+    // 	    	nl->node = node;
+    // 	    	nl->lsn = node->lsn;
+    // 	    	stk.push(nl);
+    // 	    }
+    // 	    for(uint32_t index=0; index < node->count; ++index) {
+    // 		if(Overlap(&record->rect, &(node->records[index].rect))) {
+    // 		    //		    LoadNode(node->records[index].offset);
+    // 		    RtreeNodeLSN* nodelsn = new RtreeNodeLSN;
+    // 		    nodelsn->node = node->records[index].child;
+    // 		    nodelsn->lsn = node->records[index].child->lsn;
+    // 		    stk.push(nodelsn);
+    // 		}
+    // 	    }
+    // 	    node->unlock();
+    // 	}
+    // }
+
+    // Point query version
     void Rtree::SearchRecordInNode(RtreeRecord* record,
-				   std::stack<Rtree::RtreeNodeLSN*>& stk,
-				   std::vector<Rtree::RtreeRecord>& results)
+    				   std::stack<Rtree::RtreeNodeLSN*>& stk,
+    				   std::vector<Rtree::RtreeRecord>& results)
     {
 	while (!stk.empty()) {
-	    Rtree::RtreeNodeLSN* nodelsn = stk.top();
-	    stk.pop();
-	    Rtree::RtreeNode* node = nodelsn->node;
-	    node->rdlock();
-	    if (node->level == 0) { // leaf node
-		for(uint32_t index=0; index < node->count; ++index) {
-		    if(Overlap(&record->rect, &(node->records[index].rect))) {
-			results.push_back(node->records[index]);
-		    }
-		}
-		node->unlock();
-		continue;
-	    }
-	    //	    node->rdlock();
-	    uint64_t lsn = nodelsn->lsn;
-	    while (node != NULL && lsn != node->lsn) {
-		RtreeNode* prev = node;
-		node = node->sibling;
-		assert(node != NULL);
-		prev->unlock();
-		node->rdlock();
-		Rtree::RtreeNodeLSN* nl = new Rtree::RtreeNodeLSN;
-		nl->node = node;
-		nl->lsn = node->lsn;
-		stk.push(nl);
-	    }
-	    for(uint32_t index=0; index < node->count; ++index) {
-		if(Overlap(&record->rect, &(node->records[index].rect))) {
-		    //		    LoadNode(node->records[index].offset);
-		    RtreeNodeLSN* nodelsn = new RtreeNodeLSN;
-		    nodelsn->node = node->records[index].child;
-		    nodelsn->lsn = node->records[index].child->lsn;
-		    stk.push(nodelsn);
-		}
-	    }
-	    node->unlock();
-	}
+    	    Rtree::RtreeNodeLSN* nodelsn = stk.top();
+    	    stk.pop();
+    	    Rtree::RtreeNode* node = nodelsn->node;
+    	    if (node->level == 0) { // leaf node
+    	    	for(uint32_t index=0; index < node->count; ++index) {
+    	    	    if(Overlap(&record->rect, &(node->records[index].rect))) {
+    	    		results.push_back(node->records[index]);
+	    		return;
+    	    	    }
+    	    	}
+    	    	continue;
+    	    }
+    	    node->rdlock();
+    	    uint64_t lsn = nodelsn->lsn;
+    	    while (node != NULL && lsn != node->lsn) {
+    	    	RtreeNode* prev = node;
+    	    	node = node->sibling;
+    	    	assert(node != NULL);
+    	    	prev->unlock();
+    	    	node->rdlock();
+    	    	Rtree::RtreeNodeLSN* nl = new Rtree::RtreeNodeLSN;
+    	    	nl->node = node;
+    	    	nl->lsn = node->lsn;
+    	    	stk.push(nl);
+    	    }
+    	    for(uint32_t index=0; index < node->count; ++index) {
+    	    	if(Overlap(&record->rect, &(node->records[index].rect))) {
+    	    	    // LoadNode(node->records[index].offset);
+    	    	    RtreeNodeLSN* nodelsn = new RtreeNodeLSN;
+    	    	    nodelsn->node = node->records[index].child;
+    	    	    nodelsn->lsn = node->records[index].child->lsn;
+    	    	    stk.push(nodelsn);
+    	    	}
+    	    }
+    	    node->unlock();
+    	}
     }
 
     // bool Rtree::Save(std::ofstream& out)
